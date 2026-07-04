@@ -1,19 +1,31 @@
 import * as base64js from 'base64-js';
 import { useCallback, useRef } from 'react';
-import LiveAudioStream from 'react-native-live-audio-stream';
-import { useModel } from './useModel';
 import { PermissionsAndroid, Platform } from "react-native";
+import LiveAudioStream from 'react-native-live-audio-stream';
+import { check, PERMISSIONS, request, RESULTS } from 'react-native-permissions';
+import { useModel } from './useModel';
 
 const WINDOW_SIZE = 15600;
 
 async function requestMicPermission() {
-  if (Platform.OS !== "android") return true;
+  if (Platform.OS === "android") {
+    const res = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+    );
 
-  const res = await PermissionsAndroid.request(
-    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
-  );
+    return res === PermissionsAndroid.RESULTS.GRANTED;
+  }
+  
+  const permission = PERMISSIONS.IOS.MICROPHONE;
+  const status = await check(permission);
 
-  return res === PermissionsAndroid.RESULTS.GRANTED;
+  if (status === RESULTS.GRANTED) return true;
+  if (status === RESULTS.DENIED) {
+    const result = await request(permission);
+    return result === RESULTS.GRANTED;
+  }
+
+  return false;
 }
 
 export function useClassifier(onResult: (label: string, score: number) => void) {
