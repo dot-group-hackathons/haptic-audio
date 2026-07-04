@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
-
-import { AudioEventType } from "../core/events";
-import { Logger } from "../core/logger";
-import { BackgroundService } from "../core/backgroundService";
-import { createRNPlatform, RNPlatform } from "../platform-rn";
+import { useClassifier } from "../lib/useClassifier";
 
 interface LogLine {
   id: string;
@@ -18,59 +14,19 @@ interface LogLine {
   text: string;
 }
 
-const SIM_BUTTONS: { label: string; type: AudioEventType }[] = [
-  { label: "🔔 Doorbell", type: AudioEventType.Doorbell },
-  { label: "🚨 Smoke alarm", type: AudioEventType.SmokeAlarm },
-  { label: "🗣️ Your name", type: AudioEventType.NameCalled },
-  { label: "📞 Phone", type: AudioEventType.PhoneRinging },
-];
-
 export default function App() {
   const [running, setRunning] = useState(false);
   const [lines, setLines] = useState<LogLine[]>([]);
 
-  const append = useCallback((kind: LogLine["kind"], text: string) => {
-    setLines((prev) =>
-      [
-        { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, kind, text },
-        ...prev,
-      ].slice(0, 60),
-    );
-  }, []);
+  const { start, stop, ready } = useClassifier((label, score) => {
+    setLines((prev) => [...prev, { id: Date.now().toString(), kind: 'log', text: `${label} (${score.toFixed(2)})` }]);
+  });
 
-  // Build the platform + service exactly once.
-  const ref = useRef<{ platform: RNPlatform; service: BackgroundService } | null>(
-    null,
-  );
-  if (ref.current === null) {
-    const logger = new Logger("audio-assist", "debug", (level, scope, message) =>
-      append("log", `${scope} — ${message}`),
-    );
-    const platform = createRNPlatform(logger, { randomIntervalMs: 0 });
-    platform.notifier.onNotification((n) => append("alert", n.title));
-    ref.current = { platform, service: new BackgroundService(platform, logger) };
-  }
+  const toggle = () => {
+    if (running) stop(); else start();
+    setRunning(!running);
+  };
 
-  useEffect(() => {
-    return () => {
-      void ref.current?.service.stop();
-    };
-  }, []);
-
-  const toggle = useCallback(async () => {
-    const { service } = ref.current!;
-    if (service.isRunning()) {
-      await service.stop();
-      setRunning(false);
-    } else {
-      await service.start();
-      setRunning(true);
-    }
-  }, []);
-
-  const simulate = useCallback((type: AudioEventType) => {
-    ref.current!.platform.audioSource.simulate(type);
-  }, []);
 
   return (
     <View style={styles.screen}>
@@ -89,22 +45,7 @@ export default function App() {
         </Text>
       </Pressable>
 
-      <Text style={styles.sectionLabel}>Simulate a sound</Text>
-      <View style={styles.simRow}>
-        {SIM_BUTTONS.map((b) => (
-          <Pressable
-            key={b.type}
-            onPress={() => simulate(b.type)}
-            disabled={!running}
-            style={[styles.simBtn, !running && styles.simBtnDisabled]}
-          >
-            <Text style={styles.simBtnText}>{b.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <Text style={styles.sectionLabel}>Activity</Text>
-      <ScrollView style={styles.log} contentContainerStyle={styles.logContent}>
+    <ScrollView style={styles.log} contentContainerStyle={styles.logContent}>
         {lines.length === 0 ? (
           <Text style={styles.empty}>No activity yet.</Text>
         ) : (
@@ -118,7 +59,7 @@ export default function App() {
             </Text>
           ))
         )}
-      </ScrollView>
+    </ScrollView>
     </View>
   );
 }
