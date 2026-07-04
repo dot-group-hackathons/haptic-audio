@@ -1,10 +1,11 @@
 import * as base64js from 'base64-js';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import LiveAudioStream from 'react-native-live-audio-stream';
 import { useModel } from './useModel';
 import { PermissionsAndroid, Platform } from "react-native";
 
 const WINDOW_SIZE = 15600;
+const MIN_SCORE = 0.30;
 
 async function requestMicPermission() {
   if (Platform.OS !== "android") return true;
@@ -16,9 +17,17 @@ async function requestMicPermission() {
   return res === PermissionsAndroid.RESULTS.GRANTED;
 }
 
-export function useClassifier(onResult: (label: string, score: number) => void) {
+export function useClassifier(
+  selectedLabels: Set<string>,
+  onResult: (label: string, score: number) => void
+) {
   const { ready, classify } = useModel();
   const bufferRef = useRef<number[]>([]);
+  const selectedLabelsRef = useRef(selectedLabels);
+
+  useEffect(() => {
+    selectedLabelsRef.current = selectedLabels;
+  }, [selectedLabels]);
 
   const start = useCallback(async() => {
     if (!ready) return;
@@ -49,13 +58,27 @@ export function useClassifier(onResult: (label: string, score: number) => void) 
       if (bufferRef.current.length >= WINDOW_SIZE) {
         const window = new Float32Array(bufferRef.current.slice(0, WINDOW_SIZE));
         bufferRef.current = bufferRef.current.slice(WINDOW_SIZE);
-        const result = classify(window);
-        if (result) onResult(result.label, result.score);
+        const prediction = classify(window);
+        if (!prediction) return;
+        let bestLabel = "";
+        let bestScore = -Infinity;
+        for (let i = 0; i < prediction.scores.length; i++) {
+          const label = prediction.labels[i];
+          if (!selectedLabelsRef.current.has(label)) continue;
+          const score = prediction.scores[i];
+          if (score > bestScore) {
+            bestScore = score;
+            bestLabel = label;
+          }
+        }
+        if (bestScore >= MIN_SCORE) {
+          onResult(bestLabel, bestScore);
+        }
       }
     });
 
     LiveAudioStream.start();
-  }, [ready, classify, onResult]);
+  }, [ready, classify, onResult, selectedLabels]);
 
   const stop = useCallback(() => LiveAudioStream.stop(), []);
 
