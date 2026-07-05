@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["WearBridgeModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.wearbridge.WearBridgeModule"]
+  }
+}

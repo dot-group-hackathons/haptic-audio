@@ -40,7 +40,8 @@ async function requestMicPermission() {
 
 export function useClassifier(
   selectedLabels: Set<string>,
-  onResult: (label: string, score: number) => void
+  onResult: (label: string, score: number) => void,
+  onWatchEvent?: (label: string, score: number) => void
 ) {
   const { ready, classify } = useModelContext();
   const bufferRef = useRef<number[]>([]);
@@ -110,6 +111,7 @@ export function useClassifier(
         }
         if (bestLabel) {
           onResult(bestLabel, bestScore);
+          onWatchEvent?.(bestLabel, bestScore);
         }
       }
     });

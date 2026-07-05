@@ -5,6 +5,7 @@ import { useModelContext } from "../lib/ModelContext";
 import { useSoundSelection } from "../lib/useSoundSelection";
 import { useUserName } from "../lib/useUserName";
 import { useClassifier } from "../lib/useClassifier";
+import { vibrateWatch, sendLabelToWatch } from '../lib/WearModule';
 import {
   CATALOG,
   existingLabels,
@@ -48,7 +49,12 @@ export default function App() {
     setAlert(det);
   }, []);
 
-  const { start, stop } = useClassifier(selected, handleResult);
+  const handleWatchEvent = (label: string, score: number) => {
+    vibrateWatch();
+    sendLabelToWatch(label, score);
+  };
+
+  const { start, stop } = useClassifier(selected, handleResult, handleWatchEvent);
 
   const toggleListening = useCallback(() => {
     if (running) {
