@@ -1,10 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { StatusBar, StyleSheet, Vibration, View } from "react-native";
+import BackgroundService from 'react-native-background-actions';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useModelContext } from "../lib/ModelContext";
-import { useSoundSelection } from "../lib/useSoundSelection";
-import { useUserName } from "../lib/useUserName";
-import { useClassifier } from "../lib/useClassifier";
 import {
   CATALOG,
   existingLabels,
@@ -12,17 +9,21 @@ import {
   itemForLabel,
   type CatalogItem,
 } from "../lib/catalog";
+import { useModelContext } from "../lib/ModelContext";
 import type { Detection } from "../lib/types";
+import { useClassifier } from "../lib/useClassifier";
+import { useSoundSelection } from "../lib/useSoundSelection";
+import { useUserName } from "../lib/useUserName";
 import { colors } from "../theme";
 
+import AlertSheet from "../components/AlertSheet";
+import BottomNav, { type Tab } from "../components/BottomNav";
+import NameSetupSheet from "../components/NameSetupSheet";
+import SoundDetailSheet from "../components/SoundDetailSheet";
+import HistoryScreen from "../screens/HistoryScreen";
 import HomeScreen from "../screens/HomeScreen";
 import SoundsScreen from "../screens/SoundsScreen";
-import HistoryScreen from "../screens/HistoryScreen";
 import WatchScreen from "../screens/WatchScreen";
-import BottomNav, { type Tab } from "../components/BottomNav";
-import AlertSheet from "../components/AlertSheet";
-import SoundDetailSheet from "../components/SoundDetailSheet";
-import NameSetupSheet from "../components/NameSetupSheet";
 
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -38,23 +39,55 @@ export default function App() {
   const [alert, setAlert] = useState<Detection | null>(null);
   const [sheetItem, setSheetItem] = useState<CatalogItem | null>(null);
 
-  // A monitored sound was heard: log it, buzz, and raise the alert sheet.
+  const backgroundOptions = {
+    taskName: 'AudioAssist',
+    taskTitle: 'Listening for sounds',
+    taskDesc: 'Monitoring for alerts',
+    taskIcon: { name: 'ic_launcher', type: 'mipmap' },
+    color: '#ff00ff',
+    linkingURI: 'audioassist://',
+  };
+
+  async function backgroundTask() {
+    await new Promise(async (resolve) => {
+      while (BackgroundService.isRunning()) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      resolve(null);
+    });
+  }
+
+  // useNotifications();
+
   const handleResult = useCallback((label: string, score: number) => {
     const item = itemForLabel(label);
     if (!item) return; // model fired a class outside our curated catalog
+    
     const det: Detection = { id: makeId(), item, score, at: Date.now() };
     setDetections((prev) => [det, ...prev].slice(0, 100));
     Vibration.vibrate(item.pat);
     setAlert(det);
+
+    // Notifications.scheduleNotificationAsync({
+    //   content: {
+    //     title: item.name,
+    //     body: `Detected with score of {score}.`,
+    //     sound: true,
+    //   },
+    //   trigger: null
+    // })
+
   }, []);
 
   const { start, stop } = useClassifier(selected, handleResult);
 
-  const toggleListening = useCallback(() => {
+  const toggleListening = useCallback(async () => {
     if (running) {
       stop();
+      // await BackgroundService.stop();
       Vibration.cancel();
     } else {
+      // await BackgroundService.start(backgroundTask, backgroundOptions);
       start();
     }
     setRunning((r) => !r);

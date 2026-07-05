@@ -34,7 +34,7 @@ export default function ListeningHero({ running, monitoredCount, ready, onToggle
   const sub = running
     ? `Monitoring ${monitoredCount} sound${monitoredCount === 1 ? "" : "s"} on-device. You'll feel a buzz the moment something matters.`
     : ready
-      ? "Sonar isn't listening yet. Start it to be alerted by vibration."
+      ? "AudioAssist isn't listening yet. Start it to be alerted by vibration."
       : "Loading the on-device sound model.";
 
   return (

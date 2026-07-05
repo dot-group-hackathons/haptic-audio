@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_KEY = "user-name";
 
-// The user's name, persisted. Captured on first launch and used later for
-// name/phonetic recognition. `ready` gates the first-run prompt until we know
-// whether a name is already stored.
+// Persistant storage of user's name. Used for name recognition.
 export function useUserName() {
   const [name, setName] = useState<string | null>(null);
   const [ready, setReady] = useState(false);

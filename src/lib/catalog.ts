@@ -5,9 +5,6 @@
 // icon-bearing sound to one or more underlying YAMNet label strings. Toggling a
 // catalog item flips all of its labels in the persisted selection Set, and an
 // incoming detection is matched back to its catalog item by label.
-//
-// `pat` is the vibration pattern in milliseconds as [buzz, gap, buzz, gap, ...],
-// used both to drive real Vibration and to render the little pattern preview.
 
 export type SoundGroup = "Safety" | "Home" | "People";
 
@@ -19,18 +16,16 @@ export interface CatalogItem {
   safety: boolean;
   /** YAMNet/AudioSet display names this sound listens for. */
   labels: string[];
-  /** Vibration pattern in ms: buzz, gap, buzz, gap, ... */
+  /** Vibration pattern in ms: buzz, gap, buzz, gap... */
   pat: number[];
   /** Default-on when the user has never chosen. */
   defaultOn: boolean;
-  /** Min window peak (0–1) to fire — gates loud-nearby-only sounds like speech. */
+  /** Min window peak (0–1) */
   minPeak?: number;
   /** Per-item min score (0–1), overriding the global default. */
   minScore?: number;
 }
 
-// Underlying labels use exact AudioSet display names. Any that don't exist in
-// the loaded model are filtered out at runtime, so listing extras is harmless.
 export const CATALOG: CatalogItem[] = [
   // ---- Safety ---------------------------------------------------------------
   {
@@ -83,7 +78,7 @@ export const CATALOG: CatalogItem[] = [
     labels: ["Knock"],
     pat: [200, 150, 200, 150, 200],
     defaultOn: true,
-    minScore: 0.15, // knocks score low and variable per window
+    minScore: 0.15,
   },
   {
     id: "water",
@@ -102,7 +97,6 @@ export const CATALOG: CatalogItem[] = [
     emoji: "📣",
     group: "People",
     safety: false,
-    // Wordless yelling only; shouted words read as "Speech" (see "voice").
     labels: ["Shout", "Screaming", "Yell"],
     pat: [350, 150, 350],
     defaultOn: true,
@@ -116,8 +110,8 @@ export const CATALOG: CatalogItem[] = [
     labels: ["Speech"],
     pat: [200, 120, 200],
     defaultOn: true,
-    minPeak: 0.6, // loud/near only — skip background chatter
-    minScore: 0.5, // real calling ~0.8+; keeps knocks from misfiring as voice
+    minPeak: 0.6, // loud/near only
+    minScore: 0.5,
   },
   {
     id: "baby",
@@ -173,24 +167,19 @@ export function minScoreForLabel(label: string): number | undefined {
 
 /**
  * Given the full set of model labels and the persisted selection, return the
- * catalog labels that actually exist in the model for a single item. Used both
- * to toggle selection and to decide whether an item reads as "on".
+ * catalog labels that actually exist in the model for a single item.
  */
 export function existingLabels(item: CatalogItem, allLabels: string[]): string[] {
   const set = new Set(allLabels);
   return item.labels.filter((l) => set.has(l));
 }
 
-/** An item is "on" when at least one of its real labels is selected. */
+// An item is "on" when at least one of its real labels is selected.
 export function isItemOn(item: CatalogItem, selected: Set<string>): boolean {
   return item.labels.some((l) => selected.has(l));
 }
 
-/**
- * The selection to use when the user has never chosen (first launch). Every
- * `defaultOn` sound is enabled, restricted to labels the model actually has.
- * This is the source of truth for defaults — the picker mirrors it via isItemOn.
- */
+// The selection to use when the user has never chosen (first launch).
 export function defaultSelection(allLabels: string[]): Set<string> {
   const available = new Set(allLabels);
   const out = new Set<string>();

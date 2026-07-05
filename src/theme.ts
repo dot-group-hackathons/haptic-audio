@@ -1,6 +1,3 @@
-// Design tokens for the "Sonar" UI. Kept in one place so screens/components
-// stay visually consistent. Values mirror the reference design.
-
 export const colors = {
   canvas: "#EAE8E2",
   canvasTop: "#F0EEE9",
@@ -16,7 +13,6 @@ export const colors = {
   safetySoft: "#FBE9E4",
   ok: "#1F9A6D",
 
-  // dark hero card
   heroBg: "#17161A",
   heroLive: "#C9C8F5",
   heroPip: "#7C78F0",
@@ -30,7 +26,6 @@ export const radius = {
   sm: 16,
 } as const;
 
-// A soft, layered card shadow approximated for RN (iOS shadow + Android elevation).
 export const cardShadow = {
   shadowColor: "#17161A",
   shadowOpacity: 0.08,
