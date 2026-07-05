@@ -5,9 +5,6 @@
 // icon-bearing sound to one or more underlying YAMNet label strings. Toggling a
 // catalog item flips all of its labels in the persisted selection Set, and an
 // incoming detection is matched back to its catalog item by label.
-//
-// `pat` is the vibration pattern in milliseconds as [buzz, gap, buzz, gap, ...],
-// used both to drive real Vibration and to render the little pattern preview.
 
 export type SoundGroup = "Safety" | "Home" | "People";
 
@@ -19,18 +16,16 @@ export interface CatalogItem {
   safety: boolean;
   /** YAMNet/AudioSet display names this sound listens for. */
   labels: string[];
-  /** Vibration pattern in ms: buzz, gap, buzz, gap, ... */
+  /** Vibration pattern in ms: buzz, gap, buzz, gap... */
   pat: number[];
   /** Default-on when the user has never chosen. */
   defaultOn: boolean;
-  /** Min window peak (0–1) to fire — gates loud-nearby-only sounds like speech. */
+  /** Min window peak (0–1) */
   minPeak?: number;
   /** Per-item min score (0–1), overriding the global default. */
   minScore?: number;
 }
 
-// Underlying labels use exact AudioSet display names. Any that don't exist in
-// the loaded model are filtered out at runtime, so listing extras is harmless.
 export const CATALOG: CatalogItem[] = [
   // ---- Safety ---------------------------------------------------------------
   {
@@ -49,7 +44,14 @@ export const CATALOG: CatalogItem[] = [
     emoji: "🚨",
     group: "Safety",
     safety: true,
-    labels: ["Siren", "Civil defense siren", "Emergency vehicle", "Ambulance (siren)"],
+    labels: [
+      "Siren",
+      "Civil defense siren",
+      "Emergency vehicle",
+      "Police car (siren)",
+      "Ambulance (siren)",
+      "Fire engine, fire truck (siren)",
+    ],
     pat: [150, 120, 150, 120, 600],
     defaultOn: true,
   },
@@ -63,6 +65,48 @@ export const CATALOG: CatalogItem[] = [
     pat: [700],
     defaultOn: true,
   },
+  {
+    id: "carAlarm",
+    name: "Car alarm",
+    emoji: "🚗",
+    group: "Safety",
+    safety: true,
+    labels: ["Car alarm"],
+    pat: [200, 100, 200, 100, 200, 100, 200],
+    defaultOn: true,
+  },
+  {
+    id: "alarm",
+    name: "Alarm / buzzer",
+    emoji: "⏰",
+    group: "Safety",
+    safety: true,
+    labels: ["Alarm", "Alarm clock", "Buzzer"],
+    pat: [250, 150, 250, 150, 250],
+    defaultOn: true,
+  },
+  {
+    id: "gunshot",
+    name: "Gunshot",
+    emoji: "🔫",
+    group: "Safety",
+    safety: true,
+    labels: ["Gunshot, gunfire", "Machine gun", "Artillery fire"],
+    pat: [500],
+    defaultOn: true,
+  },
+  {
+    id: "explosion",
+    name: "Explosion",
+    emoji: "💥",
+    group: "Safety",
+    safety: true,
+    labels: ["Explosion", "Boom"],
+    pat: [600],
+    defaultOn: true,
+  },
+
+
   // ---- Home -----------------------------------------------------------------
   {
     id: "doorbell",
@@ -83,7 +127,7 @@ export const CATALOG: CatalogItem[] = [
     labels: ["Knock"],
     pat: [200, 150, 200, 150, 200],
     defaultOn: true,
-    minScore: 0.15, // knocks score low and variable per window
+    minScore: 0.15,
   },
   {
     id: "water",
@@ -95,15 +139,45 @@ export const CATALOG: CatalogItem[] = [
     pat: [700],
     defaultOn: true,
   },
-  // ---- People ---------------------------------------------------------------
+  {
+    id: "microwave",
+    name: "Microwave / timer beep",
+    emoji: "⏲️",
+    group: "Home",
+    safety: false,
+    labels: ["Microwave oven"],
+    pat: [150, 100, 150, 100, 150],
+    defaultOn: true,
+  },
+  {
+    id: "vacuum",
+    name: "Vacuum cleaner",
+    emoji: "🧹",
+    group: "Home",
+    safety: false,
+    labels: ["Vacuum cleaner"],
+    pat: [500],
+    defaultOn: false,
+  },
+  {
+    id: "thunderstorm",
+    name: "Thunder",
+    emoji: "⛈️",
+    group: "Home",
+    safety: false,
+    labels: ["Thunderstorm", "Thunder"],
+    pat: [400, 200, 400],
+    defaultOn: false,
+  },
+
+  // ---- People -----------------------------------------------------------------
   {
     id: "name",
     name: "Someone calling out",
     emoji: "📣",
     group: "People",
     safety: false,
-    // Wordless yelling only; shouted words read as "Speech" (see "voice").
-    labels: ["Shout", "Screaming", "Yell"],
+    labels: ["Shout", "Screaming", "Yell", "Bellow", "Children shouting"],
     pat: [350, 150, 350],
     defaultOn: true,
   },
@@ -113,11 +187,11 @@ export const CATALOG: CatalogItem[] = [
     emoji: "🗣️",
     group: "People",
     safety: false,
-    labels: ["Speech"],
+    labels: ["Speech", "Conversation"],
     pat: [200, 120, 200],
     defaultOn: true,
-    minPeak: 0.6, // loud/near only — skip background chatter
-    minScore: 0.5, // real calling ~0.8+; keeps knocks from misfiring as voice
+    minPeak: 0.6,
+    minScore: 0.5,
   },
   {
     id: "baby",
@@ -125,7 +199,7 @@ export const CATALOG: CatalogItem[] = [
     emoji: "👶",
     group: "People",
     safety: false,
-    labels: ["Baby cry, infant cry", "Crying, sobbing"],
+    labels: ["Baby cry, infant cry", "Crying, sobbing", "Wail, moan"],
     pat: [400, 150, 400],
     defaultOn: true,
   },
@@ -145,9 +219,19 @@ export const CATALOG: CatalogItem[] = [
     emoji: "🐕",
     group: "People",
     safety: false,
-    labels: ["Dog", "Bark", "Bow-wow"],
+    labels: ["Dog", "Bark", "Bow-wow", "Growling", "Howl", "Yip"],
     pat: [180, 150, 180, 150, 180],
     defaultOn: true,
+  },
+  {
+    id: "cat",
+    name: "Cat meowing",
+    emoji: "🐈",
+    group: "People",
+    safety: false,
+    labels: ["Cat", "Meow", "Caterwaul"],
+    pat: [220, 150, 220],
+    defaultOn: false,
   },
 ];
 
@@ -173,24 +257,19 @@ export function minScoreForLabel(label: string): number | undefined {
 
 /**
  * Given the full set of model labels and the persisted selection, return the
- * catalog labels that actually exist in the model for a single item. Used both
- * to toggle selection and to decide whether an item reads as "on".
+ * catalog labels that actually exist in the model for a single item.
  */
 export function existingLabels(item: CatalogItem, allLabels: string[]): string[] {
   const set = new Set(allLabels);
   return item.labels.filter((l) => set.has(l));
 }
 
-/** An item is "on" when at least one of its real labels is selected. */
+// An item is "on" when at least one of its real labels is selected.
 export function isItemOn(item: CatalogItem, selected: Set<string>): boolean {
   return item.labels.some((l) => selected.has(l));
 }
 
-/**
- * The selection to use when the user has never chosen (first launch). Every
- * `defaultOn` sound is enabled, restricted to labels the model actually has.
- * This is the source of truth for defaults — the picker mirrors it via isItemOn.
- */
+// The selection to use when the user has never chosen (first launch).
 export function defaultSelection(allLabels: string[]): Set<string> {
   const available = new Set(allLabels);
   const out = new Set<string>();

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCallback, useEffect, useState } from "react";
 import { defaultSelection } from "./catalog";
 
 const STORAGE_KEY = "selected-yamnet-labels";
@@ -20,8 +20,6 @@ export function useSoundSelection(allLabels: string[]) {
         return;
       }
 
-      // First launch: enable every default-on catalog sound (all of them),
-      // restricted to labels the loaded model actually provides.
       if (allLabels.length > 0) {
         setSelected(defaultSelection(allLabels));
       }
@@ -58,7 +56,7 @@ export function useSoundSelection(allLabels: string[]) {
   }, []);
 
   // Add or remove a batch of labels in one persisted write. Used when a single
-  // curated sound in the UI maps to several underlying YAMNet labels.
+  // sound option in the UI maps to several YAMNet labels.
   const setMany = useCallback((labels: string[], on: boolean) => {
     setSelected((prev) => {
       const next = new Set(prev);

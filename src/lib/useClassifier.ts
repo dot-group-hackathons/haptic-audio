@@ -1,16 +1,17 @@
 import * as base64js from 'base64-js';
-import { useCallback, useRef, useEffect } from 'react';
-import LiveAudioStream from 'react-native-live-audio-stream';
+import { useCallback, useEffect, useRef } from 'react';
 import { PermissionsAndroid, Platform } from "react-native";
+import LiveAudioStream from 'react-native-live-audio-stream';
 import { minPeakForLabel, minScoreForLabel } from './catalog';
 import { useModelContext } from './ModelContext';
 
 const WINDOW_SIZE = 15600;
-const HOP_SIZE = WINDOW_SIZE >> 1; // 50% overlap so brief transients (knocks) aren't split across windows
-const MIN_SCORE = 0.20; // default bar; per-item minScore can override (e.g. knock)
+const HOP_SIZE = WINDOW_SIZE >> 1; // 50% overlap so sounds aren't split across windows
+const MIN_SCORE = 0.20;
 
-// Normalize each window toward TARGET_PEAK (lifts quiet/distant sounds, never
-// clips). Skip windows below GAIN_FLOOR; MAX_GAIN caps the boost.
+// Normalize each window toward TARGET_PEAK
+// Skip windows below GAIN_FLOOR. 
+// MAX_GAIN caps the boost.
 const TARGET_PEAK = 0.9;
 const GAIN_FLOOR = 0.05;
 const MAX_GAIN = 6;
@@ -24,7 +25,6 @@ async function requestMicPermission() {
     return res === PermissionsAndroid.RESULTS.GRANTED;
   }
 
-  // iOS: lazy require so Android never loads the (absent) native module.
   const { check, PERMISSIONS, request, RESULTS } = require("react-native-permissions");
   const permission = PERMISSIONS.IOS.MICROPHONE;
   const status = await check(permission);
@@ -76,12 +76,10 @@ export function useClassifier(
         bufferRef.current.push(sample / 32768);
       }
 
-      // Overlapping windows: advance by HOP_SIZE, not WINDOW_SIZE.
       while (bufferRef.current.length >= WINDOW_SIZE) {
         const window = new Float32Array(bufferRef.current.slice(0, WINDOW_SIZE));
         bufferRef.current = bufferRef.current.slice(HOP_SIZE);
 
-        // Raw peak (before gain) — true loudness for the speech gate below.
         let peak = 0;
         for (let k = 0; k < window.length; k++) {
           const a = Math.abs(window[k]);
@@ -100,9 +98,10 @@ export function useClassifier(
         for (let i = 0; i < prediction.scores.length; i++) {
           const label = prediction.labels[i];
           if (!selectedLabelsRef.current.has(label)) continue;
-          if (peak < minPeakForLabel(label)) continue; // loudness gate (speech)
+          if (peak < minPeakForLabel(label)) continue;
+          
           const score = prediction.scores[i];
-          if (score < (minScoreForLabel(label) ?? MIN_SCORE)) continue; // per-label bar
+          if (score < (minScoreForLabel(label) ?? MIN_SCORE)) continue;
           if (score > bestScore) {
             bestScore = score;
             bestLabel = label;

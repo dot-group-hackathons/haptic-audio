@@ -1,12 +1,9 @@
 import type { CatalogItem } from "./catalog";
 
-/** A logged sound detection, shown on Home and History. */
 export interface Detection {
   id: string;
   item: CatalogItem;
-  /** Model confidence 0..1. */
-  score: number;
-  /** Wall-clock time of detection. */
+  score: number; // confidence
   at: number;
 }
 
