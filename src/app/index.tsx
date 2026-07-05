@@ -1,157 +1,124 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { StatusBar, StyleSheet, Vibration, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useModelContext } from "../lib/ModelContext";
+import { useSoundSelection } from "../lib/useSoundSelection";
+import { useUserName } from "../lib/useUserName";
+import { useClassifier } from "../lib/useClassifier";
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+  CATALOG,
+  existingLabels,
+  isItemOn,
+  itemForLabel,
+  type CatalogItem,
+} from "../lib/catalog";
+import type { Detection } from "../lib/types";
+import { colors } from "../theme";
 
-import { AudioEventType } from "../core/events";
-import { Logger } from "../core/logger";
-import { BackgroundService } from "../core/backgroundService";
-import { createRNPlatform, RNPlatform } from "../platform-rn";
+import HomeScreen from "../screens/HomeScreen";
+import SoundsScreen from "../screens/SoundsScreen";
+import HistoryScreen from "../screens/HistoryScreen";
+import WatchScreen from "../screens/WatchScreen";
+import BottomNav, { type Tab } from "../components/BottomNav";
+import AlertSheet from "../components/AlertSheet";
+import SoundDetailSheet from "../components/SoundDetailSheet";
+import NameSetupSheet from "../components/NameSetupSheet";
 
-interface LogLine {
-  id: string;
-  kind: "alert" | "log";
-  text: string;
-}
-
-const SIM_BUTTONS: { label: string; type: AudioEventType }[] = [
-  { label: "🔔 Doorbell", type: AudioEventType.Doorbell },
-  { label: "🚨 Smoke alarm", type: AudioEventType.SmokeAlarm },
-  { label: "🗣️ Your name", type: AudioEventType.NameCalled },
-  { label: "📞 Phone", type: AudioEventType.PhoneRinging },
-];
+const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export default function App() {
+  const insets = useSafeAreaInsets();
+  const { ready, labels } = useModelContext();
+  const { selected, setMany } = useSoundSelection(labels);
+  const { name, ready: nameReady, saveName } = useUserName();
+
+  const [tab, setTab] = useState<Tab>("home");
   const [running, setRunning] = useState(false);
-  const [lines, setLines] = useState<LogLine[]>([]);
+  const [detections, setDetections] = useState<Detection[]>([]);
+  const [alert, setAlert] = useState<Detection | null>(null);
+  const [sheetItem, setSheetItem] = useState<CatalogItem | null>(null);
 
-  const append = useCallback((kind: LogLine["kind"], text: string) => {
-    setLines((prev) =>
-      [
-        { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, kind, text },
-        ...prev,
-      ].slice(0, 60),
-    );
+  // A monitored sound was heard: log it, buzz, and raise the alert sheet.
+  const handleResult = useCallback((label: string, score: number) => {
+    const item = itemForLabel(label);
+    if (!item) return; // model fired a class outside our curated catalog
+    const det: Detection = { id: makeId(), item, score, at: Date.now() };
+    setDetections((prev) => [det, ...prev].slice(0, 100));
+    Vibration.vibrate(item.pat);
+    setAlert(det);
   }, []);
 
-  // Build the platform + service exactly once.
-  const ref = useRef<{ platform: RNPlatform; service: BackgroundService } | null>(
-    null,
-  );
-  if (ref.current === null) {
-    const logger = new Logger("audio-assist", "debug", (level, scope, message) =>
-      append("log", `${scope} — ${message}`),
-    );
-    const platform = createRNPlatform(logger, { randomIntervalMs: 0 });
-    platform.notifier.onNotification((n) => append("alert", n.title));
-    ref.current = { platform, service: new BackgroundService(platform, logger) };
-  }
+  const { start, stop } = useClassifier(selected, handleResult);
 
-  useEffect(() => {
-    return () => {
-      void ref.current?.service.stop();
-    };
-  }, []);
-
-  const toggle = useCallback(async () => {
-    const { service } = ref.current!;
-    if (service.isRunning()) {
-      await service.stop();
-      setRunning(false);
+  const toggleListening = useCallback(() => {
+    if (running) {
+      stop();
+      Vibration.cancel();
     } else {
-      await service.start();
-      setRunning(true);
+      start();
     }
-  }, []);
+    setRunning((r) => !r);
+  }, [running, start, stop]);
 
-  const simulate = useCallback((type: AudioEventType) => {
-    ref.current!.platform.audioSource.simulate(type);
-  }, []);
+  const monitoredCount = useMemo(
+    () => CATALOG.filter((c) => isItemOn(c, selected)).length,
+    [selected]
+  );
+
+  const toggleItem = useCallback(
+    (item: CatalogItem, on: boolean) => {
+      setMany(existingLabels(item, labels), on);
+    },
+    [labels, setMany]
+  );
 
   return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>audio-assist</Text>
-      <Text style={styles.subtitle}>
-        Background listener that alerts you with a vibration. Base build — every
-        sound uses the same buzz.
-      </Text>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" />
 
-      <Pressable
-        onPress={toggle}
-        style={[styles.toggle, running ? styles.toggleOn : styles.toggleOff]}
-      >
-        <Text style={styles.toggleText}>
-          {running ? "● Listening — tap to stop" : "○ Stopped — tap to start"}
-        </Text>
-      </Pressable>
-
-      <Text style={styles.sectionLabel}>Simulate a sound</Text>
-      <View style={styles.simRow}>
-        {SIM_BUTTONS.map((b) => (
-          <Pressable
-            key={b.type}
-            onPress={() => simulate(b.type)}
-            disabled={!running}
-            style={[styles.simBtn, !running && styles.simBtnDisabled]}
-          >
-            <Text style={styles.simBtnText}>{b.label}</Text>
-          </Pressable>
-        ))}
+      <View style={styles.screen}>
+        {tab === "home" && (
+          <HomeScreen
+            running={running}
+            ready={ready}
+            monitoredCount={monitoredCount}
+            detections={detections}
+            onToggle={toggleListening}
+            onOpenDetection={setAlert}
+            onGoHistory={() => setTab("history")}
+          />
+        )}
+        {tab === "sounds" && (
+          <SoundsScreen selected={selected} onToggleItem={toggleItem} onOpenItem={setSheetItem} />
+        )}
+        {tab === "history" && (
+          <HistoryScreen detections={detections} onOpenDetection={setAlert} />
+        )}
+        {tab === "watch" && <WatchScreen />}
       </View>
 
-      <Text style={styles.sectionLabel}>Activity</Text>
-      <ScrollView style={styles.log} contentContainerStyle={styles.logContent}>
-        {lines.length === 0 ? (
-          <Text style={styles.empty}>No activity yet.</Text>
-        ) : (
-          lines.map((l) => (
-            <Text
-              key={l.id}
-              style={[styles.logLine, l.kind === "alert" && styles.logAlert]}
-            >
-              {l.kind === "alert" ? "📳 " : "· "}
-              {l.text}
-            </Text>
-          ))
-        )}
-      </ScrollView>
+      <BottomNav
+        active={tab}
+        onSelect={setTab}
+        running={running}
+        onToggleListening={toggleListening}
+        bottomInset={insets.bottom}
+      />
+
+      <NameSetupSheet visible={nameReady && !name} onSubmit={saveName} />
+
+      <AlertSheet detection={alert} onClose={() => setAlert(null)} />
+      <SoundDetailSheet
+        item={sheetItem}
+        on={sheetItem ? isItemOn(sheetItem, selected) : false}
+        onToggle={(on) => sheetItem && toggleItem(sheetItem, on)}
+        onClose={() => setSheetItem(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#0d1117", paddingTop: 64, paddingHorizontal: 20 },
-  title: { color: "#f0f6fc", fontSize: 28, fontWeight: "700" },
-  subtitle: { color: "#8b949e", fontSize: 14, marginTop: 6, marginBottom: 20 },
-  toggle: { borderRadius: 12, paddingVertical: 18, alignItems: "center" },
-  toggleOn: { backgroundColor: "#238636" },
-  toggleOff: { backgroundColor: "#21262d", borderWidth: 1, borderColor: "#30363d" },
-  toggleText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  sectionLabel: {
-    color: "#8b949e",
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginTop: 24,
-    marginBottom: 10,
-  },
-  simRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  simBtn: {
-    backgroundColor: "#1f6feb",
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  simBtnDisabled: { backgroundColor: "#21262d", opacity: 0.6 },
-  simBtnText: { color: "#fff", fontSize: 14, fontWeight: "500" },
-  log: { flex: 1, marginTop: 4, marginBottom: 20 },
-  logContent: { paddingBottom: 20 },
-  empty: { color: "#484f58", fontStyle: "italic", marginTop: 8 },
-  logLine: { color: "#8b949e", fontSize: 12, fontFamily: "monospace", marginVertical: 2 },
-  logAlert: { color: "#58a6ff", fontWeight: "600" },
+  root: { flex: 1, backgroundColor: colors.canvas },
+  screen: { flex: 1 },
 });
