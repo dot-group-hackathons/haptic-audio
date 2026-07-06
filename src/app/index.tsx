@@ -26,6 +26,7 @@ import BottomNav, { type Tab } from "../components/BottomNav";
 import NameSetupSheet from "../components/NameSetupSheet";
 import SoundDetailSheet from "../components/SoundDetailSheet";
 import TranscriptionSetupSheet from "../components/TranscriptionSetupSheet";
+import SettingsSheet from "../components/SettingsSheet";
 import HomeScreen from "../screens/HomeScreen";
 import SoundsScreen from "../screens/SoundsScreen";
 import HistoryScreen from "../screens/HistoryScreen";
@@ -53,6 +54,7 @@ export default function App() {
   const [sheetItem, setSheetItem] = useState<CatalogItem | null>(null);
   const [caption, setCaption] = useState("");
   const [transcribing, setTranscribing] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const busyRef = useRef(false);
 
   const backgroundOptions = {
@@ -181,6 +183,7 @@ export default function App() {
             onToggle={toggleListening}
             onOpenDetection={setAlert}
             onGoHistory={() => setTab("history")}
+            onOpenSettings={() => setSettingsOpen(true)}
           />
         )}
         {tab === "sounds" && (
@@ -205,6 +208,19 @@ export default function App() {
         progress={progress}
         onEnable={enableTranscription}
         onDecline={() => setOptIn(false)}
+      />
+
+      <SettingsSheet
+        visible={settingsOpen}
+        name={name}
+        onSaveName={saveName}
+        optedIn={optedIn}
+        ready={whisperReady}
+        downloading={downloading}
+        progress={progress}
+        onEnableTranscription={enableTranscription}
+        onDisableTranscription={() => setOptIn(false)}
+        onClose={() => setSettingsOpen(false)}
       />
 
       <AlertSheet detection={alert} onClose={() => setAlert(null)} />

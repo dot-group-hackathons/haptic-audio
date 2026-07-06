@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import DetectionCard from "../components/DetectionCard";
 import ListeningHero from "../components/ListeningHero";
 import type { Detection } from "../lib/types";
@@ -17,6 +17,7 @@ interface Props {
   onToggle(): void;
   onOpenDetection(d: Detection): void;
   onGoHistory(): void;
+  onOpenSettings(): void;
 }
 
 function greeting(): string {
@@ -37,6 +38,7 @@ export default function HomeScreen({
   onToggle,
   onOpenDetection,
   onGoHistory,
+  onOpenSettings,
 }: Props) {
   const today = detections.filter((d) => dayLabel(d.at) === "Today").slice(0, 4);
 
@@ -47,9 +49,15 @@ export default function HomeScreen({
           <Text style={styles.eyebrow}>{greeting()}</Text>
           <Text style={styles.name}>{name || "there"}</Text>
         </View>
-        <View style={styles.iconbtn}>
+        <Pressable
+          style={styles.iconbtn}
+          onPress={onOpenSettings}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+        >
           <Text style={{ fontSize: 18 }}>⚙️</Text>
-        </View>
+        </Pressable>
       </View>
 
       <ScrollView
