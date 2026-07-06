@@ -142,6 +142,7 @@ export default function App() {
           <HomeScreen
             running={running}
             ready={ready}
+            name={name}
             monitoredCount={monitoredCount}
             detections={detections}
             caption={caption}

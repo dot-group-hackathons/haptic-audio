@@ -1,4 +1,4 @@
-// Design tokens for the "Sonar" UI. Kept in one place so screens/components
+// Design tokens for the "HapticAudio" UI. Kept in one place so screens/components
 // stay visually consistent. Values mirror the reference design.
 
 export const colors = {

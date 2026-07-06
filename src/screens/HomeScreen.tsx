@@ -9,6 +9,7 @@ import CaptionBar from "../components/CaptionBar";
 interface Props {
   running: boolean;
   ready: boolean;
+  name: string | null;
   monitoredCount: number;
   detections: Detection[];
   caption: string;
@@ -28,6 +29,7 @@ function greeting(): string {
 export default function HomeScreen({
   running,
   ready,
+  name,
   monitoredCount,
   detections,
   caption,
@@ -43,7 +45,7 @@ export default function HomeScreen({
       <View style={styles.toprow}>
         <View>
           <Text style={styles.eyebrow}>{greeting()}</Text>
-          <Text style={styles.name}>Dar</Text>
+          <Text style={styles.name}>{name || "there"}</Text>
         </View>
         <View style={styles.iconbtn}>
           <Text style={{ fontSize: 18 }}>⚙️</Text>

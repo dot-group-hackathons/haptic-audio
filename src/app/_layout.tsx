@@ -6,7 +6,7 @@ export default function RootLayout() {
   return (
     <ModelProvider>
       <WhisperProvider>
-        {/* The app renders its own header/nav ("Sonar" UI), so hide the native stack header. */}
+        {/* The app renders its own header/nav ("HapticAudio" UI), so hide the native stack header. */}
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
         </Stack>
