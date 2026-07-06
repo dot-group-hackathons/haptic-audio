@@ -1,3 +1,4 @@
+import { VibrationPatternsProvider } from "@/lib/VibrationPatternsContext";
 import { Stack } from "expo-router";
 import { ModelProvider } from "../lib/ModelContext";
 import { WhisperProvider } from "../lib/WhisperContext";
@@ -11,6 +12,11 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
         </Stack>
       </WhisperProvider>
+      <VibrationPatternsProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+        </Stack>
+      </VibrationPatternsProvider>
     </ModelProvider>
   );
 }

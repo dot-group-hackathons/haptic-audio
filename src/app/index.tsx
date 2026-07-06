@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StatusBar, StyleSheet, Vibration, View } from "react-native";
+import { Platform, StatusBar, StyleSheet, Vibration, View } from "react-native";
+import BackgroundService from 'react-native-background-actions';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useModelContext } from "../lib/ModelContext";
-import { useWhisperContext } from "../lib/WhisperContext";
-import { useSoundSelection } from "../lib/useSoundSelection";
-import { useUserName } from "../lib/useUserName";
-import { useTranscriptionOptIn } from "../lib/useTranscriptionOptIn";
-import { useClassifier } from "../lib/useClassifier";
-import { matchesName } from "../lib/nameMatch";
 import {
   CATALOG,
   existingLabels,
@@ -16,18 +10,25 @@ import {
   NAME_CALLED_ITEM,
   type CatalogItem,
 } from "../lib/catalog";
+import { useModelContext } from "../lib/ModelContext";
+import { useWhisperContext } from "../lib/WhisperContext";
 import type { Detection } from "../lib/types";
+import { useClassifier } from "../lib/useClassifier";
+import { useSoundSelection } from "../lib/useSoundSelection";
+import { useUserName } from "../lib/useUserName";
+import { useTranscriptionOptIn } from "../lib/useTranscriptionOptIn";
+import { matchesName } from "../lib/nameMatch";
 import { colors } from "../theme";
 
+import { useVibrationPatternsContext } from "@/lib/VibrationPatternsContext";
+import AlertSheet from "../components/AlertSheet";
+import BottomNav, { type Tab } from "../components/BottomNav";
+import NameSetupSheet from "../components/NameSetupSheet";
+import SoundDetailSheet from "../components/SoundDetailSheet";
+import TranscriptionSetupSheet from "../components/TranscriptionSetupSheet";
 import HomeScreen from "../screens/HomeScreen";
 import SoundsScreen from "../screens/SoundsScreen";
 import HistoryScreen from "../screens/HistoryScreen";
-import WatchScreen from "../screens/WatchScreen";
-import BottomNav, { type Tab } from "../components/BottomNav";
-import AlertSheet from "../components/AlertSheet";
-import SoundDetailSheet from "../components/SoundDetailSheet";
-import NameSetupSheet from "../components/NameSetupSheet";
-import TranscriptionSetupSheet from "../components/TranscriptionSetupSheet";
 
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -54,15 +55,43 @@ export default function App() {
   const [transcribing, setTranscribing] = useState(false);
   const busyRef = useRef(false);
 
-  // A monitored sound was heard: log it, buzz, and raise the alert sheet.
+  const backgroundOptions = {
+    taskName: 'AudioAssist',
+    taskTitle: 'Listening for sounds',
+    taskDesc: 'Monitoring for alerts',
+    taskIcon: { name: 'ic_launcher', type: 'mipmap' },
+    color: '#ff00ff',
+    linkingURI: 'audioassist://',
+  };
+
+  async function backgroundTask() {
+    await new Promise(async (resolve) => {
+      while (BackgroundService.isRunning()) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      resolve(null);
+    });
+  }
+
+  const { patternFor, setPattern, resetPattern } = useVibrationPatternsContext();
+
   const handleResult = useCallback((label: string, score: number) => {
     const item = itemForLabel(label);
     if (!item) return; // model fired a class outside our curated catalog
+    
     const det: Detection = { id: makeId(), item, score, at: Date.now() };
     setDetections((prev) => [det, ...prev].slice(0, 100));
-    Vibration.vibrate(item.pat);
+     
+    let pat = patternFor(item);
+    if (Platform.OS === "android") {
+      pat = [0, ...pat];
+    }
+
+    Vibration.vibrate(pat);
+
     setAlert(det);
-  }, []);
+
+  }, [patternFor]);
 
   // Transcribe buffered speech, show captions, and alert if the name was called.
   const handleSpeech = useCallback(
@@ -104,12 +133,14 @@ export default function App() {
     if (optedIn === true) prepare();
   }, [optedIn, prepare]);
 
-  const toggleListening = useCallback(() => {
+  const toggleListening = useCallback(async () => {
     if (running) {
       stop();
+      // await BackgroundService.stop();
       Vibration.cancel();
       setCaption("");
     } else {
+      // await BackgroundService.start(backgroundTask, backgroundOptions);
       start();
     }
     setRunning((r) => !r);
@@ -155,10 +186,6 @@ export default function App() {
         {tab === "sounds" && (
           <SoundsScreen selected={selected} onToggleItem={toggleItem} onOpenItem={setSheetItem} />
         )}
-        {tab === "history" && (
-          <HistoryScreen detections={detections} onOpenDetection={setAlert} />
-        )}
-        {tab === "watch" && <WatchScreen />}
       </View>
 
       <BottomNav
@@ -186,6 +213,9 @@ export default function App() {
         on={sheetItem ? isItemOn(sheetItem, selected) : false}
         onToggle={(on) => sheetItem && toggleItem(sheetItem, on)}
         onClose={() => setSheetItem(null)}
+        patternFor={patternFor}
+        onSetPattern={setPattern}
+        onResetPattern={resetPattern}
       />
     </View>
   );

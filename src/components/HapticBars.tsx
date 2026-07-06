@@ -2,11 +2,10 @@ import { StyleSheet, View } from "react-native";
 import { colors } from "../theme";
 
 interface Props {
-  /** Pattern in ms: buzz, gap, buzz, gap, ... (even = buzz, odd = gap). */
   pattern: number[];
   tone?: "accent" | "safety" | "mute";
   height?: number;
-  /** ms -> px scale for the bar widths. */
+  // ms -> px scale for the bar widths
   unit?: number;
   opacity?: number;
 }

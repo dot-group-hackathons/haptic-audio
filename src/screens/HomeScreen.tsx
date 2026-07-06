@@ -1,10 +1,10 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { colors } from "../theme";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import DetectionCard from "../components/DetectionCard";
+import ListeningHero from "../components/ListeningHero";
 import type { Detection } from "../lib/types";
 import { dayLabel } from "../lib/types";
-import ListeningHero from "../components/ListeningHero";
-import DetectionCard from "../components/DetectionCard";
 import CaptionBar from "../components/CaptionBar";
+import { colors } from "../theme";
 
 interface Props {
   running: boolean;
@@ -68,9 +68,6 @@ export default function HomeScreen({
 
         <View style={styles.sec}>
           <Text style={styles.secTitle}>Earlier today</Text>
-          <Pressable onPress={onGoHistory} hitSlop={8}>
-            <Text style={styles.secLink}>History</Text>
-          </Pressable>
         </View>
 
         {today.length === 0 ? (

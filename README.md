@@ -1,72 +1,14 @@
-# audio-assist
+# HapticAudio
 
-A background service that listens for important sounds (doorbell, smoke alarm,
-your name…) and alerts the user with a **vibration** — aimed at people who are
-deaf or hard of hearing. This is the base build: a single generic buzz for every
-sound (no specialized patterns yet), a platform-agnostic core, and documented
-iOS-fork seams.
-
-- **Architecture & how to run:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- **iOS fork guide:** [docs/IOS_FORK.md](docs/IOS_FORK.md)
-
-Quick start: `npm install` then `npm run android` / `npm run ios` / `npm run web`,
-tap **Start**, then a **Simulate** button to feel the alert.
-
----
-
-## Expo scaffolding notes
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An accessibility focused mobile app that listens to surrounding audio and translates recognizable sounds into custom vibrations you can set, so that you don't have to hear them to notice them. 
 
 ## Get started
 
-1. Install dependencies
+This app uses native modules and cannot run in Expo Go, it can currently only run in a [development build](https://docs.expo.dev/develop/development-builds/introduction/).
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+> **Due to our team's resource limitations, this app is currently only tested/working on Android, via a local dev build.** You'll need a physical Android phone with USB debugging enabled , connected over USB, to install and run the dev build.
 
 ```bash
-npm run reset-project
+npm install
+npx expo run:android
 ```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
