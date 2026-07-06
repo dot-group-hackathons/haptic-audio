@@ -10,6 +10,7 @@ interface Props {
   ready: boolean;
   monitoredCount: number;
   detections: Detection[];
+  name: string | null;
   onToggle(): void;
   onOpenDetection(d: Detection): void;
   onGoHistory(): void;
@@ -27,6 +28,7 @@ export default function HomeScreen({
   ready,
   monitoredCount,
   detections,
+  name,
   onToggle,
   onOpenDetection,
   onGoHistory,
@@ -37,7 +39,8 @@ export default function HomeScreen({
     <View style={{ flex: 1 }}>
       <View style={styles.toprow}>
         <View>
-          <Text style={styles.name}>{greeting()}</Text>
+          <Text style={styles.eyebrow}>{greeting()}</Text>
+          <Text style={styles.name}>{name ?? "name"}</Text>
         </View>
       </View>
 

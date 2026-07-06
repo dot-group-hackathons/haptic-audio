@@ -113,6 +113,7 @@ export default function App() {
             ready={ready}
             monitoredCount={monitoredCount}
             detections={detections}
+            name={name}
             onToggle={toggleListening}
             onOpenDetection={setAlert}
             onGoHistory={() => setTab("history")}
